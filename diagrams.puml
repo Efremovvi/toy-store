@@ -1,0 +1,199 @@
+
+
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+actor "Гость" as Guest
+actor "Пользователь" as User
+actor "Администратор" as Admin
+
+rectangle "Интернет-магазин игрушек" {
+  usecase "Просмотр каталога" as UC1
+  usecase "Фильтрация товаров" as UC2
+  usecase "Просмотр товара" as UC3
+  usecase "Добавить в корзину" as UC4
+  usecase "Регистрация" as UC5
+  usecase "Войти в систему" as UC6
+  usecase "Оформить заказ" as UC7
+  usecase "Управлять товарами" as UC8
+  usecase "Просмотр заказов" as UC9
+}
+
+Guest --> UC1
+Guest --> UC2
+Guest --> UC3
+Guest --> UC4
+Guest --> UC5
+
+User --> UC6
+User --> UC7
+
+Admin --> UC8
+Admin --> UC9
+@enduml
+
+
+@startuml
+actor "Пользователь" as User
+participant "Браузер" as Browser
+participant "Flask App" as Flask
+database "SQLite" as DB
+
+User -> Browser: 1. Нажимает "Регистрация"
+Browser -> Flask: 2. GET /register
+Flask --> Browser: 3. Форма регистрации
+Browser --> User: 4. Показывает форму
+
+User -> Browser: 5. Вводит данные
+Browser -> Flask: 6. POST /register
+
+Flask -> DB: 7. Проверка email
+DB --> Flask: 8. Email свободен
+
+Flask -> Flask: 9. Хэширование пароля
+Flask -> DB: 10. INSERT INTO user
+DB --> Flask: 11. Успех
+
+Flask --> Browser: 12. redirect(/login)
+Browser --> User: 13. Страница входа
+@enduml
+
+
+@startuml
+actor "Пользователь" as User
+participant "Браузер" as Browser
+participant "Flask App" as Flask
+database "SQLite" as DB
+participant "Сессия" as Session
+
+User -> Browser: 1. Добавляет товар
+Browser -> Flask: 2. GET /add-to-cart/1
+Flask -> Session: 3. cart[1] = 1
+Session --> Flask: 4. Готово
+Flask --> Browser: 5. redirect(/catalog)
+Browser --> User: 6. Товар добавлен
+
+User -> Browser: 7. Переход в корзину
+Browser -> Flask: 8. GET /cart
+Flask -> Session: 9. Получить cart
+Session --> Flask: 10. Данные корзины
+
+loop Для каждого товара
+    Flask -> DB: 11. SELECT * FROM product
+    DB --> Flask: 12. Данные товара
+end
+
+Flask --> Browser: 13. Страница корзины
+Browser --> User: 14. Показывает сумму
+
+User -> Browser: 15. Оформляет заказ
+Browser -> Flask: 16. GET /checkout
+
+alt Пользователь авторизован
+    Flask -> DB: 17. INSERT INTO order
+    Flask -> DB: 18. INSERT INTO order_item
+    Flask -> Session: 19. Очистить корзину
+    Flask --> Browser: 20. redirect(/)
+    Browser --> User: 21. Заказ оформлен
+else Не авторизован
+    Flask --> Browser: 22. redirect(/login)
+end
+@enduml
+
+
+@startuml
+class User {
+  + id : Integer
+  + username : String
+  + email : String
+  + password : String
+  + is_admin : Boolean
+  --
+  + get_id()
+  + is_authenticated()
+}
+
+class Product {
+  + id : Integer
+  + name : String
+  + price : Float
+  + description : Text
+  + category : String
+  + stock : Integer
+}
+
+class Order {
+  + id : Integer
+  + user_id : Integer
+  + total : Float
+  + status : String
+  + created_at : DateTime
+}
+
+class OrderItem {
+  + id : Integer
+  + order_id : Integer
+  + product_id : Integer
+  + quantity : Integer
+  + price : Float
+}
+
+User "1" -- "0..*" Order
+Order "1" -- "1..*" OrderItem
+Product "1" -- "0..*" OrderItem
+@enduml
+
+
+@startuml
+start
+:Пользователь открывает сайт;
+:Выбирает товары;
+:Добавляет в корзину;
+
+if (Пользователь авторизован?) then (Да)
+  :Переходит к оформлению;
+  :Подтверждает заказ;
+  :Система сохраняет заказ;
+  :Очищает корзину;
+  :Показывает подтверждение;
+  stop
+else (Нет)
+  :Предлагает зарегистрироваться;
+  :Пользователь регистрируется;
+  :Входит в систему;
+  :Возвращается в корзину;
+  :Оформляет заказ;
+  stop
+endif
+@enduml
+
+@startuml
+package "Интернет-магазин" {
+  [Flask Routes] as Routes
+  [Шаблоны Jinja2] as Templates
+  [Модели SQLAlchemy] as Models
+  [Flask-Login] as Auth
+}
+
+database "SQLite" as DB
+node "Браузер пользователя" as Browser
+
+Browser --> Routes : HTTP запросы
+Routes --> Templates : Рендеринг
+Routes --> Auth : Проверка
+Routes --> Models : CRUD операции
+Models --> DB : SQL запросы
+@enduml
+
+
+
+ToyStore/
+├── screenshots/
+│   ├── uml-usecase.png       ✅ Use Case диаграмма
+│   ├── uml-sequence-register.png  ✅ Регистрация
+│   ├── uml-sequence-order.png     ✅ Заказ
+│   ├── uml-class.png         ✅ Модели данных
+│   ├── uml-activity.png      ✅ Процесс покупки
+│   └── uml-component.png     ✅ Архитектура
+└── diagrams.puml             ✅ Исходные коды
+
