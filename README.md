@@ -33,3 +33,19 @@
 ```bash
 git clone https://github.com/Efremovvi/toy-store.git
 cd toy-store
+## 📸 Скриншоты
+
+### Главная страница
+![Главная страница](screenshots/main-page.png)
+
+### Каталог товаров
+![Каталог](screenshots/catalog.png)
+
+### Корзина покупок
+![Корзина](screenshots/cart.png)
+
+### Регистрация
+![Регистрация](screenshots/register.png)
+
+### Вход в систему
+![Вход](screenshots/login.png)
