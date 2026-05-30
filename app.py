@@ -3,25 +3,22 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 
-# Создаём приложение
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-here'
+app.config['SECRET_KEY'] = 'your-secret-key-2024'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shop.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Инициализация
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# ========== МОДЕЛИ ==========
+# Модели
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
-    is_admin = db.Column(db.Boolean, default=False)
 
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -35,26 +32,25 @@ class Product(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# Создаём базу данных и добавляем тестовые товары
+# Создаем базу данных и тестовые товары
 with app.app_context():
     db.create_all()
     
-    # Добавляем товары если база пустая
     if Product.query.count() == 0:
-        toys = [
-            Product(name='Медвежонок Бамбл', price=1500, description='Мягкая игрушка, 30 см', category='мягкие', stock=10),
-            Product(name='Лего Конструктор', price=2500, description='Конструктор из 200 деталей', category='конструкторы', stock=5),
-            Product(name='Кукла Маша', price=1200, description='Кукла с аксессуарами', category='куклы', stock=8),
-            Product(name='Мяч футбольный', price=900, description='Футбольный мяч размера 4', category='спорт', stock=15),
-            Product(name='Пазл 1000 деталей', price=800, description='Пазл с животными', category='пазлы', stock=12),
-            Product(name='Робот-трансформер', price=3200, description='Свет, звук, трансформация', category='роботы', stock=3),
+        products = [
+            Product(name='Медвежонок Бамбл', price=1500, description='Мягкая игрушка 30 см', category='мягкие', stock=10),
+            Product(name='Лего Конструктор', price=2500, description='200 деталей', category='конструкторы', stock=5),
+            Product(name='Кукла Маша', price=1200, description='С аксессуарами', category='куклы', stock=8),
+            Product(name='Мяч футбольный', price=900, description='Размер 4', category='спорт', stock=15),
+            Product(name='Пазл 1000 деталей', price=800, description='С животными', category='пазлы', stock=12),
+            Product(name='Робот-трансформер', price=3200, description='Свет и звук', category='роботы', stock=3),
         ]
-        for toy in toys:
-            db.session.add(toy)
+        for p in products:
+            db.session.add(p)
         db.session.commit()
-        print("✅ База данных создана с тестовыми товарами!")
+        print("База данных создана!")
 
-# ========== МАРШРУТЫ ==========
+# Маршруты
 @app.route('/')
 def index():
     products = Product.query.limit(6).all()
@@ -63,12 +59,10 @@ def index():
 @app.route('/catalog')
 def catalog():
     category = request.args.get('category', 'all')
-    
-    if category != 'all':
-        products = Product.query.filter_by(category=category).all()
-    else:
+    if category == 'all':
         products = Product.query.all()
-    
+    else:
+        products = Product.query.filter_by(category=category).all()
     categories = ['все', 'мягкие', 'конструкторы', 'куклы', 'спорт', 'пазлы', 'роботы']
     return render_template('catalog.html', products=products, categories=categories, current_category=category)
 
@@ -109,31 +103,12 @@ def remove_from_cart(product_id):
     cart = session.get('cart', {})
     cart.pop(str(product_id), None)
     session['cart'] = cart
-    flash('Товар удалён из корзины', 'info')
-    return redirect(url_for('cart'))
-
-@app.route('/update-cart', methods=['POST'])
-def update_cart():
-    product_id = request.form.get('product_id')
-    quantity = int(request.form.get('quantity', 0))
-    
-    cart = session.get('cart', {})
-    if quantity > 0:
-        cart[product_id] = quantity
-    else:
-        cart.pop(product_id, None)
-    
-    session['cart'] = cart
+    flash('Товар удален', 'info')
     return redirect(url_for('cart'))
 
 @app.route('/checkout')
 @login_required
 def checkout():
-    cart = session.get('cart', {})
-    if not cart:
-        flash('Корзина пуста', 'warning')
-        return redirect(url_for('cart'))
-    
     session.pop('cart', None)
     flash('Заказ оформлен! Спасибо за покупку!', 'success')
     return redirect(url_for('index'))
@@ -146,14 +121,14 @@ def register():
         password = generate_password_hash(request.form['password'])
         
         if User.query.filter_by(username=username).first():
-            flash('Пользователь с таким именем уже существует', 'danger')
+            flash('Пользователь уже существует', 'danger')
             return redirect(url_for('register'))
         
         user = User(username=username, email=email, password=password)
         db.session.add(user)
         db.session.commit()
         
-        flash('Регистрация успешна! Теперь войдите в систему', 'success')
+        flash('Регистрация успешна! Войдите в систему', 'success')
         return redirect(url_for('login'))
     
     return render_template('register.html')
@@ -170,7 +145,7 @@ def login():
             flash('Добро пожаловать!', 'success')
             return redirect(url_for('index'))
         
-        flash('Неверное имя пользователя или пароль', 'danger')
+        flash('Неверное имя или пароль', 'danger')
     
     return render_template('login.html')
 
